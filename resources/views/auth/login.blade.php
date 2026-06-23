@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - NoteApp Admin</title>
+    <title>Login - HRSI Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -22,7 +22,7 @@
                     <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle shadow" style="width: 70px; height: 70px;">
                         <span class="h3 mb-0 text-primary fw-bold">N</span>
                     </div>
-                    <h3 class="mt-3 text-white fw-light">NoteApp Admin</h3>
+                    <h3 class="mt-3 text-white fw-light">HRSI Admin</h3>
                 </div>
 
                 <div class="card login-card">
@@ -58,7 +58,23 @@
                     </div>
                 </div>
 
-                <p class="text-center text-white-50 mt-4 small">
+                <div class="card mt-3 border-0" style="border-radius: 1rem; box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);">
+                    <div class="card-body py-3 px-4">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-key me-1"></i> Akun Testing</h6>
+                        <p class="text-muted small mb-2">Semua password: <code>password</code></p>
+                        <table class="table table-sm small mb-0">
+                            <thead><tr><th>Role</th><th>Email</th></tr></thead>
+                            <tbody>
+                                <tr><td><span class="badge bg-danger">Super Admin</span></td><td><code>admin@admin.com</code></td></tr>
+                                <tr><td><span class="badge bg-warning text-dark">HRD</span></td><td><code>siti@hrsi.test</code></td></tr>
+                                <tr><td><span class="badge bg-info text-dark">Manager</span></td><td><code>budi@hrsi.test</code> / <code>dodi@hrsi.test</code></td></tr>
+                                <tr><td><span class="badge bg-secondary">Karyawan</span></td><td><code>ahmad@hrsi.test</code> / <code>dewi@hrsi.test</code> / <code>rudi@hrsi.test</code><br><code>ani@hrsi.test</code> / <code>fitri@hrsi.test</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p class="text-center text-white-50 mt-3 small">
                     <i class="fas fa-arrow-left me-1"></i>
                     <a href="/" class="text-white-50">Back to Home</a>
                 </p>

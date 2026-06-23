@@ -227,7 +227,7 @@ class DummyDataSeeder extends Seeder
                     'tanggal' => $dateStr,
                 ]);
 
-                if ($date->gt($today)) {
+                if ($date->gte($today)) {
                     continue;
                 }
 
