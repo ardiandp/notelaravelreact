@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ApprovalChainStep extends Model
 {
+    public $timestamps = false;
+
     protected $table = 'approval_chain_steps';
 
     protected $fillable = ['approval_chain_id', 'step_order', 'approver_type', 'role_id'];
