@@ -19,7 +19,8 @@ class MasterDataController extends Controller
             'jam_masuk' => 'required',
             'jam_pulang' => 'required',
             'toleransi_menit' => 'integer|min:0',
-            'is_active' => 'boolean',
+            'is_overnight' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         \App\Models\Shift::create($validated);
@@ -34,7 +35,8 @@ class MasterDataController extends Controller
             'jam_masuk' => 'required',
             'jam_pulang' => 'required',
             'toleransi_menit' => 'integer|min:0',
-            'is_active' => 'boolean',
+            'is_overnight' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $shift->update($validated);

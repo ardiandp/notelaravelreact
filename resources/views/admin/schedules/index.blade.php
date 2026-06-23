@@ -93,11 +93,15 @@
                             @elseif($schedule)
                                 <form action="{{ route('admin.schedules.update', $schedule) }}" method="POST" class="edit-schedule-form" onchange="this.submit()">
                                     @csrf @method('PUT')
-                                    <select name="shift_id" class="form-control">
+                                    <select name="shift_id" class="form-control d-block mx-auto mb-1">
                                         @foreach($shifts as $s)
                                         <option value="{{ $s->id }}" {{ $schedule->shift_id == $s->id ? 'selected' : '' }}>{{ $s->nama }}</option>
                                         @endforeach
                                         <option value="">— Hapus —</option>
+                                    </select>
+                                    <select name="work_from" class="form-control d-block mx-auto">
+                                        <option value="wfo" {{ ($schedule->work_from ?? 'wfo') === 'wfo' ? 'selected' : '' }}>WFO</option>
+                                        <option value="wfa" {{ ($schedule->work_from ?? 'wfo') === 'wfa' ? 'selected' : '' }}>WFA</option>
                                     </select>
                                 </form>
                             @else

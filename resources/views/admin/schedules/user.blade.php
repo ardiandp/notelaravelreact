@@ -74,6 +74,7 @@
                             data-date="{{ $dateStr }}"
                             data-shift-id="{{ $schedule?->shift_id ?? '' }}"
                             data-shift-name="{{ $schedule?->shift?->nama ?? '' }}"
+                            data-work-from="{{ $schedule?->work_from ?? 'wfo' }}"
                             @if(!$isWeekend && !$isHoliday) onclick="openShiftModal('{{ $dateStr }}')" @endif>
                             @if($isWeekend)
                                 <small class="text-muted">—</small>
@@ -81,6 +82,7 @@
                                 <small class="text-muted">✕</small>
                             @elseif($schedule)
                                 <span class="badge badge-info">{{ $schedule->shift->nama }}</span>
+                                <br><small class="badge {{ ($schedule->work_from ?? 'wfo') === 'wfo' ? 'badge-secondary' : 'badge-warning' }}" style="font-size:.6rem">{{ strtoupper($schedule->work_from ?? 'WFO') }}</small>
                             @else
                                 <small class="text-muted">+</small>
                             @endif
@@ -134,6 +136,16 @@
                             <label class="form-check-label text-danger" for="shift_none">Hapus jadwal</label>
                         </div>
                     </div>
+                    <hr>
+                    <p class="mb-1"><strong>Work From</strong></p>
+                    <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                        <label class="btn btn-outline-secondary btn-sm wf-btn active">
+                            <input type="radio" name="work_from" value="wfo" autocomplete="off" checked> WFO
+                        </label>
+                        <label class="btn btn-outline-warning btn-sm wf-btn">
+                            <input type="radio" name="work_from" value="wfa" autocomplete="off"> WFA
+                        </label>
+                    </div>
                     <input type="hidden" name="tanggal" id="shiftTanggal">
                 </div>
                 <div class="modal-footer">
@@ -150,7 +162,7 @@
 function openShiftModal(dateStr) {
     const cell = document.querySelector(`td[data-date="${dateStr}"]`);
     const shiftId = cell?.dataset.shiftId || '';
-    const shiftName = cell?.dataset.shiftName || '';
+    const workFrom = cell?.dataset.workFrom || 'wfo';
     document.getElementById('shiftDate').textContent = dateStr;
     document.getElementById('shiftTanggal').value = dateStr;
     document.querySelectorAll('.shift-radio').forEach(r => r.checked = false);
@@ -159,6 +171,10 @@ function openShiftModal(dateStr) {
         const radio = document.getElementById('shift_' + shiftId);
         if (radio) radio.checked = true;
     }
+    document.querySelectorAll('input[name="work_from"]').forEach(r => {
+        r.checked = r.value === workFrom;
+        r.parentElement.classList.toggle('active', r.value === workFrom);
+    });
     $('#shiftModal').modal('show');
 }
 
@@ -168,6 +184,8 @@ document.getElementById('shiftForm').addEventListener('submit', function(e) {
     const tanggal = document.getElementById('shiftTanggal').value;
     const shiftRadio = document.querySelector('input[name="shift_id"]:checked');
     const shiftId = shiftRadio ? shiftRadio.value : '';
+    const wfRadio = document.querySelector('input[name="work_from"]:checked');
+    const workFrom = wfRadio ? wfRadio.value : 'wfo';
     const btn = document.getElementById('btnSaveShift');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
@@ -175,7 +193,7 @@ document.getElementById('shiftForm').addEventListener('submit', function(e) {
     fetch('{{ route("admin.schedules.user.update", $user) }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-        body: JSON.stringify({ tanggal, shift_id: shiftId })
+        body: JSON.stringify({ tanggal, shift_id: shiftId, work_from: workFrom })
     })
     .then(r => r.json())
     .then(data => {
@@ -183,13 +201,17 @@ document.getElementById('shiftForm').addEventListener('submit', function(e) {
             const cell = document.querySelector(`td[data-date="${tanggal}"]`);
             if (cell) {
                 if (data.shift_id) {
-                    cell.innerHTML = `<span class="badge badge-info">${data.shift_name}</span>`;
+                    const wf = data.work_from || workFrom;
+                    const wfBadge = wf === 'wfo' ? 'badge-secondary' : 'badge-warning';
+                    cell.innerHTML = `<span class="badge badge-info">${data.shift_name}</span><br><small class="badge ${wfBadge}" style="font-size:.6rem">${wf.toUpperCase()}</small>`;
                     cell.dataset.shiftId = data.shift_id;
                     cell.dataset.shiftName = data.shift_name;
+                    cell.dataset.workFrom = wf;
                 } else {
                     cell.innerHTML = '<small class="text-muted">+</small>';
                     cell.dataset.shiftId = '';
                     cell.dataset.shiftName = '';
+                    cell.dataset.workFrom = 'wfo';
                 }
             }
             $('#shiftModal').modal('hide');

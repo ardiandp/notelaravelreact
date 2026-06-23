@@ -9,35 +9,80 @@ use App\Models\UserSchedule;
 use App\Models\Holiday;
 use App\Models\Shift;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AttendanceController extends Controller
 {
-    public function today(Request $request)
+    private function saveFoto(string $base64, int $userId, string $tanggal, string $type): string
     {
-        $user = $request->user();
-        $today = now()->toDateString();
+        $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $base64);
+        $imageData = base64_decode($base64);
+        if ($imageData === false) {
+            throw new \InvalidArgumentException('Invalid base64 image data');
+        }
+        $filename = "{$userId}_{$tanggal}_{$type}.jpg";
+        $path = "attendance/{$filename}";
+        Storage::disk('public')->put($path, $imageData);
+        return $path;
+    }
 
-        $attendance = Attendance::where('user_id', $user->id)
+    private function findSchedule(int $userId, string $today): ?UserSchedule
+    {
+        $schedule = UserSchedule::with('shift')
+            ->where('user_id', $userId)->where('tanggal', $today)
+            ->first();
+
+        if (!$schedule) {
+            $schedule = UserSchedule::with('shift')
+                ->where('user_id', $userId)
+                ->where('tanggal', now()->subDay()->format('Y-m-d'))
+                ->whereHas('shift', fn($q) => $q->where('is_overnight', true))
+                ->first();
+        }
+
+        return $schedule;
+    }
+
+    private function findAttendance(int $userId, string $today): ?Attendance
+    {
+        $attendance = Attendance::where('user_id', $userId)
             ->where('tanggal', $today)
             ->first();
 
-        if (! $attendance) {
-            $schedule = UserSchedule::with('shift')
-                ->where('user_id', $user->id)
-                ->where('tanggal', $today)
+        if (!$attendance) {
+            $attendance = Attendance::where('user_id', $userId)
+                ->where('tanggal', now()->subDay()->format('Y-m-d'))
+                ->whereNull('check_out')
                 ->first();
+        }
 
+        return $attendance;
+    }
+
+    public function today(Request $request)
+    {
+        $user = $request->user();
+        $today = now()->format('Y-m-d');
+
+        $schedule = $this->findSchedule($user->id, $today);
+        $attendance = $this->findAttendance($user->id, $today);
+
+        if (! $attendance) {
             return response()->json([
                 'checked_in' => false,
                 'checked_out' => false,
+                'has_schedule' => $schedule !== null,
                 'schedule' => $schedule?->shift,
+                'work_from' => $schedule?->work_from ?? 'wfo',
             ]);
         }
 
         return response()->json([
             'checked_in' => true,
             'checked_out' => $attendance->check_out !== null,
+            'has_schedule' => $schedule !== null,
             'attendance' => $attendance,
+            'work_from' => $attendance->work_from ?? 'wfo',
         ]);
     }
 
@@ -47,48 +92,57 @@ class AttendanceController extends Controller
             'lat' => 'required|numeric',
             'lon' => 'required|numeric',
             'address' => 'nullable|string',
-            'foto' => 'nullable|string',
+            'foto' => 'required|string',
             'work_from' => 'required|in:wfo,wfa',
         ]);
 
         $user = $request->user();
-        $today = now()->toDateString();
+        $today = now()->format('Y-m-d');
 
-        $exists = Attendance::where('user_id', $user->id)
-            ->where('tanggal', $today)
-            ->first();
+        $schedule = $this->findSchedule($user->id, $today);
 
-        if ($exists) {
-            return response()->json(['message' => 'Already checked in today'], 422);
+        if (!$schedule) {
+            return response()->json(['message' => 'Tidak ada jadwal kerja hari ini'], 422);
         }
-
-        $schedule = UserSchedule::with('shift')
-            ->where('user_id', $user->id)
-            ->where('tanggal', $today)
-            ->first();
 
         $terlambat = 0;
         if ($schedule?->shift) {
             $shiftStart = \Carbon\Carbon::parse($schedule->shift->jam_masuk);
-            $tolerance = $schedule->shift->toleransi_menit;
             $checkInTime = now();
+
+            if ($schedule->shift->is_overnight) {
+                $midnight = \Carbon\Carbon::parse('00:00');
+                $pulang = \Carbon\Carbon::parse($schedule->shift->jam_pulang);
+                if ($checkInTime->between($midnight, $pulang)) {
+                    $shiftStart->subDay();
+                }
+            }
+
             $terlambat = (int) $shiftStart->diffInMinutes($checkInTime, false);
             if ($terlambat < 0) $terlambat = 0;
         }
 
-        $attendance = Attendance::create([
-            'user_id' => $user->id,
-            'tanggal' => $today,
-            'check_in' => now()->format('H:i:s'),
-            'check_in_lat' => $validated['lat'],
-            'check_in_lon' => $validated['lon'],
-            'check_in_address' => $validated['address'] ?? null,
-            'check_in_foto' => $validated['foto'] ?? null,
-            'ip_address' => $request->ip(),
-            'work_from' => $validated['work_from'],
-            'terlambat_menit' => $terlambat,
-            'status' => $terlambat > 0 ? 'terlambat' : 'hadir',
-        ]);
+        $tanggal = $schedule->tanggal;
+        $fotoPath = $this->saveFoto($validated['foto'], $user->id, $tanggal, 'in');
+
+        $attendance = Attendance::firstOrCreate(
+            ['user_id' => $user->id, 'tanggal' => $tanggal],
+            [
+                'check_in' => now()->format('H:i:s'),
+                'check_in_lat' => $validated['lat'],
+                'check_in_lon' => $validated['lon'],
+                'check_in_address' => $validated['address'] ?? null,
+                'check_in_foto' => $fotoPath,
+                'ip_address' => $request->ip(),
+                'work_from' => $validated['work_from'],
+                'terlambat_menit' => $terlambat,
+                'status' => $terlambat > 0 ? 'terlambat' : 'hadir',
+            ]
+        );
+
+        if (!$attendance->wasRecentlyCreated) {
+            return response()->json(['message' => 'Sudah absen masuk hari ini'], 422);
+        }
 
         return response()->json($attendance, 201);
     }
@@ -99,30 +153,30 @@ class AttendanceController extends Controller
             'lat' => 'required|numeric',
             'lon' => 'required|numeric',
             'address' => 'nullable|string',
-            'foto' => 'nullable|string',
+            'foto' => 'required|string',
         ]);
 
         $user = $request->user();
-        $today = now()->toDateString();
+        $today = now()->format('Y-m-d');
 
-        $attendance = Attendance::where('user_id', $user->id)
-            ->where('tanggal', $today)
-            ->first();
+        $attendance = $this->findAttendance($user->id, $today);
 
         if (! $attendance) {
-            return response()->json(['message' => 'Not checked in yet'], 422);
+            return response()->json(['message' => 'Belum absen masuk'], 422);
         }
 
         if ($attendance->check_out) {
-            return response()->json(['message' => 'Already checked out'], 422);
+            return response()->json(['message' => 'Sudah absen keluar'], 422);
         }
+
+        $fotoPath = $this->saveFoto($validated['foto'], $user->id, $attendance->tanggal, 'out');
 
         $attendance->update([
             'check_out' => now()->format('H:i:s'),
             'check_out_lat' => $validated['lat'],
             'check_out_lon' => $validated['lon'],
             'check_out_address' => $validated['address'] ?? null,
-            'check_out_foto' => $validated['foto'] ?? null,
+            'check_out_foto' => $fotoPath,
         ]);
 
         return response()->json($attendance);

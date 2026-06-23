@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\AttendanceReportController;
 use App\Http\Controllers\ApprovalChainController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DivisionController;
@@ -85,6 +86,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('schedules/clear', [ScheduleController::class, 'clear'])->name('admin.schedules.clear');
     Route::get('schedules/user/{user}', [ScheduleController::class, 'userSchedule'])->name('admin.schedules.user');
     Route::post('schedules/user/{user}/update', [ScheduleController::class, 'userScheduleUpdate'])->name('admin.schedules.user.update');
+
+    // Absensi Management
+    Route::prefix('absensi')->name('admin.absensi.')->group(function () {
+        Route::get('daily', [AttendanceReportController::class, 'daily'])->name('daily');
+        Route::get('on-leave', [AttendanceReportController::class, 'onLeave'])->name('on-leave');
+        Route::get('detail/{user}', [AttendanceReportController::class, 'detail'])->name('detail');
+        Route::get('pending', [AttendanceReportController::class, 'pendingApprovals'])->name('pending');
+        Route::post('approve/{leaveRequest}', [AttendanceReportController::class, 'approveLeave'])->name('approve');
+        Route::post('reject/{leaveRequest}', [AttendanceReportController::class, 'rejectLeave'])->name('reject');
+    });
 });
 
 Route::get('/dashboard', function () {

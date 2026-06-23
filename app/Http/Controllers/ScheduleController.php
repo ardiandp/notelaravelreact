@@ -107,6 +107,7 @@ class ScheduleController extends Controller
                         'user_id' => $user->id,
                         'shift_id' => $defaultShift->id,
                         'tanggal' => $date->toDateString(),
+                        'work_from' => 'wfo',
                     ]);
                     $generated++;
                 }
@@ -118,7 +119,7 @@ class ScheduleController extends Controller
             return redirect()->route('admin.schedules.user', ['user' => $request->user_id, 'bulan' => $bulan, 'tahun' => $tahun])
                 ->with('success', "Generated $generated schedule entries for user.");
         }
-        return redirect()->route('admin.schedules.index', ['bulan' => $bulan, 'tahun' => $tahun])
+        return redirect()->route('admin.schedules', ['bulan' => $bulan, 'tahun' => $tahun])
             ->with('success', "Generated $generated schedule entries.");
     }
 
@@ -165,40 +166,54 @@ class ScheduleController extends Controller
         $validated = $request->validate([
             'tanggal' => 'required|date',
             'shift_id' => 'nullable|exists:shifts,id',
+            'work_from' => 'nullable|in:wfo,wfa',
         ]);
 
         $tanggal = $validated['tanggal'];
 
         if ($validated['shift_id']) {
+            $data = [
+                'is_override' => true,
+                'shift_id' => $validated['shift_id'],
+                'work_from' => $validated['work_from'] ?? 'wfo',
+            ];
             UserSchedule::updateOrCreate(
                 ['user_id' => $user->id, 'tanggal' => $tanggal],
-                ['shift_id' => $validated['shift_id'], 'is_override' => true]
+                $data
             );
+            $shift = Shift::find($validated['shift_id']);
         } else {
             UserSchedule::where('user_id', $user->id)->where('tanggal', $tanggal)->delete();
+            $shift = null;
         }
-
-        $shift = $validated['shift_id'] ? Shift::find($validated['shift_id']) : null;
 
         return response()->json([
             'success' => true,
             'message' => $shift ? "Jadwal {$shift->nama} untuk {$tanggal}" : 'Jadwal dihapus',
             'shift_name' => $shift?->nama,
             'shift_id' => $shift?->id,
+            'work_from' => $validated['work_from'] ?? 'wfo',
         ]);
     }
 
     public function update(Request $request, UserSchedule $schedule)
     {
-        $validated = $request->validate(['shift_id' => 'nullable|exists:shifts,id']);
+        $validated = $request->validate([
+            'shift_id' => 'nullable|exists:shifts,id',
+            'work_from' => 'nullable|in:wfo,wfa',
+        ]);
 
         if ($validated['shift_id']) {
-            $schedule->update(['shift_id' => $validated['shift_id'], 'is_override' => true]);
+            $schedule->update([
+                'is_override' => true,
+                'shift_id' => $validated['shift_id'],
+                'work_from' => $validated['work_from'] ?? $schedule->work_from ?? 'wfo',
+            ]);
         } else {
             $schedule->delete();
         }
 
-        return back()->with('success', 'Schedule updated.');
+        return back()->with('success', 'Jadwal diperbarui.');
     }
 
     public function clear(Request $request)
@@ -219,7 +234,7 @@ class ScheduleController extends Controller
             return redirect()->route('admin.schedules.user', ['user' => $request->user_id, 'bulan' => $request->bulan, 'tahun' => $request->tahun])
                 ->with('success', 'Schedules cleared for this user.');
         }
-        return redirect()->route('admin.schedules.index', ['bulan' => $request->bulan, 'tahun' => $request->tahun])
+        return redirect()->route('admin.schedules', ['bulan' => $request->bulan, 'tahun' => $request->tahun])
             ->with('success', 'Schedules cleared for this month.');
     }
 }

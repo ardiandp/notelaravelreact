@@ -8,10 +8,15 @@ import AttendancePage from './pages/AttendancePage'
 import LeaveRequestsPage from './pages/LeaveRequestsPage'
 import ApprovalsPage from './pages/ApprovalsPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import Layout from './components/Layout'
+
+function ProtectedLayout({ children, ...props }) {
+  return <ProtectedRoute><Layout {...props}>{children}</Layout></ProtectedRoute>
+}
 
 function HomeRoute() {
   const { user } = useAuth()
-  return user ? <Dashboard /> : <Navigate to="/login" replace />
+  return user ? <Layout><Dashboard /></Layout> : <Navigate to="/login" replace />
 }
 
 export default function App() {
@@ -22,10 +27,10 @@ export default function App() {
           <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/attendance" element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} />
-          <Route path="/leave-requests" element={<ProtectedRoute><LeaveRequestsPage /></ProtectedRoute>} />
-          <Route path="/approvals" element={<ProtectedRoute><ApprovalsPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/attendance" element={<ProtectedLayout title="Absensi"><AttendancePage /></ProtectedLayout>} />
+          <Route path="/leave-requests" element={<ProtectedLayout title="Pengajuan Cuti / Izin"><LeaveRequestsPage /></ProtectedLayout>} />
+          <Route path="/approvals" element={<ProtectedLayout title="Persetujuan"><ApprovalsPage /></ProtectedLayout>} />
+          <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

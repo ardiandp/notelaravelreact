@@ -310,6 +310,15 @@ return [
             'icon' => 'fas fa-fw fa-users',
         ],
         [
+            'text' => 'Manajemen Absen',
+            'icon' => 'fas fa-fw fa-clipboard-list',
+            'submenu' => [
+                ['text' => 'Rekap Harian', 'url' => 'admin/absensi/daily', 'icon' => 'fas fa-fw fa-chart-bar'],
+                ['text' => 'Izin / Cuti', 'url' => 'admin/absensi/on-leave', 'icon' => 'fas fa-fw fa-umbrella-beach'],
+                ['text' => 'Persetujuan', 'url' => 'admin/absensi/pending', 'icon' => 'fas fa-fw fa-check-double'],
+            ],
+        ],
+        [
             'text' => 'Kalender Kerja',
             'url' => 'admin/schedules',
             'icon' => 'fas fa-fw fa-calendar',
