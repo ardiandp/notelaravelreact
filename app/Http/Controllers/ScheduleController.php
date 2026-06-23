@@ -48,7 +48,7 @@ class ScheduleController extends Controller
 
         $scheduleGrid = [];
         foreach ($users as $user) {
-            $userSchedules = $schedules->get($user->id, collect())->keyBy(fn($s) => $s->tanggal);
+            $userSchedules = $schedules->get($user->id, collect())->keyBy(fn($s) => $s->tanggal?->toDateString() ?? $s->tanggal);
             $scheduleGrid[$user->id] = $userSchedules;
         }
 
@@ -154,7 +154,7 @@ class ScheduleController extends Controller
             ->whereYear('tanggal', $tahun)
             ->whereMonth('tanggal', $bulan)
             ->get()
-            ->keyBy(fn($s) => $s->tanggal);
+            ->keyBy(fn($s) => $s->tanggal?->toDateString() ?? $s->tanggal);
 
         return view('admin.schedules.user', compact(
             'user', 'shifts', 'dates', 'schedules', 'holidayDates', 'bulan', 'tahun', 'startDate', 'endDate'

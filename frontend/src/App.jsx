@@ -7,6 +7,7 @@ import Profile from './pages/Profile'
 import AttendancePage from './pages/AttendancePage'
 import LeaveRequestsPage from './pages/LeaveRequestsPage'
 import ApprovalsPage from './pages/ApprovalsPage'
+import SchedulePage from './pages/SchedulePage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/attendance" element={<ProtectedLayout title="Absensi"><AttendancePage /></ProtectedLayout>} />
           <Route path="/leave-requests" element={<ProtectedLayout title="Pengajuan Cuti / Izin"><LeaveRequestsPage /></ProtectedLayout>} />
           <Route path="/approvals" element={<ProtectedLayout title="Persetujuan"><ApprovalsPage /></ProtectedLayout>} />
+          <Route path="/schedule" element={<ProtectedLayout title="Kalender Kerja"><SchedulePage /></ProtectedLayout>} />
           <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
         </Routes>
       </AuthProvider>

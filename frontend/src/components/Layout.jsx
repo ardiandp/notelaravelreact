@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 
 const tabs = [
   { to: '/', label: 'Dashboard', icon: '🏠' },
+  { to: '/schedule', label: 'Jadwal', icon: '📅' },
   { to: '/attendance', label: 'Absensi', icon: '📍' },
   { to: '/leave-requests', label: 'Cuti', icon: '✈️' },
   { to: '/approvals', label: 'Setuju', icon: '✅' },

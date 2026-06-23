@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\ApprovalController;
 use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\LeaveBalanceController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/approvals/pending', [ApprovalController::class, 'pending']);
     Route::post('/approvals/{approval}/approve', [ApprovalController::class, 'approve']);
     Route::post('/approvals/{approval}/reject', [ApprovalController::class, 'reject']);
+
+    // Schedules
+    Route::get('/schedules', [ScheduleController::class, 'index']);
 
     // Employees (for approval chain selection)
     Route::get('/employees', [MasterDataController::class, 'employees']);

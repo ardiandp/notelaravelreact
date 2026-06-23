@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [today, setToday] = useState(null)
   const [balances, setBalances] = useState([])
   const [approvals, setApprovals] = useState(0)
@@ -55,7 +56,7 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold text-gray-800 mb-2">Selamat datang, {user?.name}</h1>
       <p className="text-gray-500 mb-6">{new Date().toLocaleDateString('id', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {cards.map((c) => (
           <Link key={c.to} to={c.to} className={`rounded-xl shadow-sm border p-5 transition ${c.bg} ${c.hover}`}>
             <div className="flex items-center justify-between mb-3">
@@ -65,6 +66,27 @@ export default function Dashboard() {
             {c.content}
           </Link>
         ))}
+      </div>
+
+      <div onClick={() => navigate('/schedule')} className="rounded-xl shadow-sm border border-indigo-200 bg-indigo-50 p-5 cursor-pointer hover:bg-indigo-100 transition mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm text-gray-500 font-medium">Jadwal Hari Ini</p>
+          <span className="text-2xl">📅</span>
+        </div>
+        {today?.has_schedule && today?.schedule ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-block text-xs font-medium px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">{today.schedule.nama}</span>
+              <span className="text-xs text-gray-500">{today.schedule.jam_masuk} - {today.schedule.jam_pulang}</span>
+              <span className={`inline-block text-xs px-1.5 py-0.5 rounded ${today.work_from === 'wfo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                {today.work_from === 'wfo' ? 'WFO' : 'WFA'}
+              </span>
+            </div>
+            <p className="text-xs text-indigo-600 font-medium mt-2">Lihat kalender &rarr;</p>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">Tidak ada jadwal hari ini</p>
+        )}
       </div>
     </div>
   )

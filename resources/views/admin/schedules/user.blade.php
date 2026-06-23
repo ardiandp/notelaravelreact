@@ -12,8 +12,8 @@
 .schedule-table th, .schedule-table td { text-align: center; vertical-align: middle; padding: .3rem .2rem; min-width: 2.2rem; }
 .schedule-table td { cursor: pointer; }
 .schedule-table td:hover { background: #e9ecef; }
-.schedule-table .weekend, .schedule-table .holiday { cursor: default; }
-.schedule-table .weekend:hover, .schedule-table .holiday:hover { background: #f8f9fa; }
+.schedule-table .holiday { cursor: default; }
+.schedule-table .holiday:hover { background: #f8f9fa; }
 .schedule-cell { border-radius: 3px; padding: 2px 0; display: block; }
 .weekday-header { font-weight: 600; }
 .weekday-header.sat { color: #17a2b8; }
@@ -63,6 +63,7 @@
                         {{ $user->name }}
                         <br><small class="text-muted">{{ $user->employeeDetail?->division?->nama_bagian ?? '-' }}</small>
                     </td>
+                    @php $defaultShift = $shifts->first(); @endphp
                     @foreach($dates as $d)
                         @php
                             $dateStr = $d->toDateString();
@@ -70,21 +71,22 @@
                             $isWeekend = $d->isWeekend();
                             $isHoliday = in_array($dateStr, $holidayDates);
                         @endphp
-                        <td class="{{ $isWeekend ? 'weekend' : ($isHoliday ? 'holiday' : '') }}"
+                        <td class="{{ $isHoliday ? 'holiday' : '' }}"
                             data-date="{{ $dateStr }}"
                             data-shift-id="{{ $schedule?->shift_id ?? '' }}"
                             data-shift-name="{{ $schedule?->shift?->nama ?? '' }}"
                             data-work-from="{{ $schedule?->work_from ?? 'wfo' }}"
-                            @if(!$isWeekend && !$isHoliday) onclick="openShiftModal('{{ $dateStr }}')" @endif>
-                            @if($isWeekend)
-                                <small class="text-muted">—</small>
-                            @elseif($isHoliday)
+                            @if(!$isHoliday) onclick="openShiftModal('{{ $dateStr }}')" @endif>
+                            @if($isHoliday)
                                 <small class="text-muted">✕</small>
                             @elseif($schedule)
                                 <span class="badge badge-info">{{ $schedule->shift->nama }}</span>
                                 <br><small class="badge {{ ($schedule->work_from ?? 'wfo') === 'wfo' ? 'badge-secondary' : 'badge-warning' }}" style="font-size:.6rem">{{ strtoupper($schedule->work_from ?? 'WFO') }}</small>
+                            @elseif($defaultShift)
+                                <span class="text-muted" style="font-size:.65rem">{{ $defaultShift->nama }}</span>
+                                <br><small class="text-muted" style="font-size:.6rem">WFO</small>
                             @else
-                                <small class="text-muted">+</small>
+                                <small class="text-muted">—</small>
                             @endif
                         </td>
                     @endforeach
@@ -208,7 +210,8 @@ document.getElementById('shiftForm').addEventListener('submit', function(e) {
                     cell.dataset.shiftName = data.shift_name;
                     cell.dataset.workFrom = wf;
                 } else {
-                    cell.innerHTML = '<small class="text-muted">+</small>';
+                    const defaultName = '{{ $shifts->first()?->nama ?? '—' }}';
+                    cell.innerHTML = `<span class="text-muted" style="font-size:.65rem">${defaultName}</span><br><small class="text-muted" style="font-size:.6rem">WFO</small>`;
                     cell.dataset.shiftId = '';
                     cell.dataset.shiftName = '';
                     cell.dataset.workFrom = 'wfo';
