@@ -310,6 +310,11 @@ return [
             'icon' => 'fas fa-fw fa-users',
         ],
         [
+            'text' => 'Kalender Kerja',
+            'url' => 'admin/schedules',
+            'icon' => 'fas fa-fw fa-calendar',
+        ],
+        [
             'text' => 'Master Data',
             'icon' => 'fas fa-fw fa-database',
             'submenu' => [
@@ -318,6 +323,8 @@ return [
                 ['text' => 'Shift', 'url' => 'admin/shifts', 'icon' => 'fas fa-fw fa-clock'],
                 ['text' => 'Lokasi Absensi', 'url' => 'admin/locations', 'icon' => 'fas fa-fw fa-map-marker-alt'],
                 ['text' => 'Hari Libur', 'url' => 'admin/holidays', 'icon' => 'fas fa-fw fa-calendar-alt'],
+                ['text' => 'Approval Chains', 'url' => 'admin/approval-chains', 'icon' => 'fas fa-fw fa-check-double'],
+                ['text' => 'Jenis Cuti', 'url' => 'admin/leave-types', 'icon' => 'fas fa-fw fa-umbrella-beach'],
             ],
         ],
         ['header' => 'account_settings'],

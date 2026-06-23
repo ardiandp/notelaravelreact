@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ApprovalChainController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DivisionController;
+use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\MasterDataController;
+use App\Http\Controllers\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -58,6 +61,30 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('holidays', [MasterDataController::class, 'holidays'])->name('admin.holidays');
     Route::post('holidays', [MasterDataController::class, 'storeHoliday'])->name('admin.holidays.store');
     Route::delete('holidays/{holiday}', [MasterDataController::class, 'destroyHoliday'])->name('admin.holidays.delete');
+
+    // Approval Chains
+    Route::get('approval-chains', [ApprovalChainController::class, 'index'])->name('admin.approval-chains');
+    Route::get('approval-chains/create', [ApprovalChainController::class, 'create'])->name('admin.approval-chains.create');
+    Route::post('approval-chains', [ApprovalChainController::class, 'store'])->name('admin.approval-chains.store');
+    Route::get('approval-chains/{approvalChain}/edit', [ApprovalChainController::class, 'edit'])->name('admin.approval-chains.edit');
+    Route::put('approval-chains/{approvalChain}', [ApprovalChainController::class, 'update'])->name('admin.approval-chains.update');
+    Route::delete('approval-chains/{approvalChain}', [ApprovalChainController::class, 'destroy'])->name('admin.approval-chains.delete');
+
+    // Leave Types
+    Route::get('leave-types', [LeaveTypeController::class, 'index'])->name('admin.leave-types');
+    Route::get('leave-types/create', [LeaveTypeController::class, 'create'])->name('admin.leave-types.create');
+    Route::post('leave-types', [LeaveTypeController::class, 'store'])->name('admin.leave-types.store');
+    Route::get('leave-types/{leaveType}/edit', [LeaveTypeController::class, 'edit'])->name('admin.leave-types.edit');
+    Route::put('leave-types/{leaveType}', [LeaveTypeController::class, 'update'])->name('admin.leave-types.update');
+    Route::delete('leave-types/{leaveType}', [LeaveTypeController::class, 'destroy'])->name('admin.leave-types.delete');
+
+    // Schedules
+    Route::get('schedules', [ScheduleController::class, 'index'])->name('admin.schedules');
+    Route::post('schedules/generate', [ScheduleController::class, 'generate'])->name('admin.schedules.generate');
+    Route::put('schedules/{schedule}', [ScheduleController::class, 'update'])->name('admin.schedules.update');
+    Route::post('schedules/clear', [ScheduleController::class, 'clear'])->name('admin.schedules.clear');
+    Route::get('schedules/user/{user}', [ScheduleController::class, 'userSchedule'])->name('admin.schedules.user');
+    Route::post('schedules/user/{user}/update', [ScheduleController::class, 'userScheduleUpdate'])->name('admin.schedules.user.update');
 });
 
 Route::get('/dashboard', function () {
