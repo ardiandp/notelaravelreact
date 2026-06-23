@@ -27,10 +27,14 @@
                     @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" name="is_admin" class="form-check-input" id="is_admin" value="1">
-                        <label class="form-check-label" for="is_admin">Admin</label>
-                    </div>
+                    <label>Role</label>
+                    <select name="role" class="form-control @error('role') is-invalid @enderror" required>
+                        <option value="">Pilih Role</option>
+                        @foreach(\Spatie\Permission\Models\Role::all() as $role)
+                            <option value="{{ $role->id }}" {{ old('role') == $role->id ? 'selected' : '' }}>{{ $role->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <button type="submit" class="btn btn-primary">Simpan</button>
                 <a href="{{ route('admin.users') }}" class="btn btn-secondary">Batal</a>

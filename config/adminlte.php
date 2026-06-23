@@ -310,6 +310,18 @@ return [
             'icon' => 'fas fa-fw fa-users',
         ],
         [
+            'text' => 'Master Data',
+            'icon' => 'fas fa-fw fa-database',
+            'submenu' => [
+                ['text' => 'Bagian', 'url' => 'admin/divisions', 'icon' => 'fas fa-fw fa-sitemap'],
+                ['text' => 'Jabatan', 'url' => 'admin/positions', 'icon' => 'fas fa-fw fa-briefcase'],
+                ['text' => 'Shift', 'url' => 'admin/shifts', 'icon' => 'fas fa-fw fa-clock'],
+                ['text' => 'Lokasi Absensi', 'url' => 'admin/locations', 'icon' => 'fas fa-fw fa-map-marker-alt'],
+                ['text' => 'Hari Libur', 'url' => 'admin/holidays', 'icon' => 'fas fa-fw fa-calendar-alt'],
+            ],
+        ],
+        ['header' => 'account_settings'],
+        [
             'text' => 'logout',
             'url' => 'logout',
             'icon' => 'fas fa-fw fa-sign-out-alt',

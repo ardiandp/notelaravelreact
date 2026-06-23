@@ -34,7 +34,7 @@
                     <tr>
                         <td>{{ $u->name }}</td>
                         <td>{{ $u->email }}</td>
-                        <td><span class="badge {{ $u->is_admin ? 'badge-warning' : 'badge-info' }}">{{ $u->is_admin ? 'Admin' : 'User' }}</span></td>
+                        <td><span class="badge badge-info">{{ $u->roles->pluck('name')->join(', ') ?: 'No Role' }}</span></td>
                         <td>{{ $u->created_at->format('d M Y') }}</td>
                         <td>
                             <a href="{{ route('admin.users.edit', $u) }}" class="btn btn-sm btn-warning">Edit</a>

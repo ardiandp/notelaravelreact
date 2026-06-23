@@ -1,60 +1,63 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import Navbar from '../components/Navbar'
+import { useAuth } from '../context/AuthContext'
 
 export default function Dashboard() {
-  const [notes, setNotes] = useState([])
-  const [content, setContent] = useState('')
-  const [error, setError] = useState('')
+  const { user } = useAuth()
+  const [today, setToday] = useState(null)
+  const [balances, setBalances] = useState([])
+  const [approvals, setApprovals] = useState(0)
 
-  const fetchNotes = useCallback(async () => {
-    try {
-      const res = await api.get('/notes')
-      setNotes(res.data)
-    } catch { setError('Failed to load notes') }
+  useEffect(() => {
+    api.get('/attendance/today').then((res) => setToday(res.data)).catch(() => {})
+    api.get('/leave-balances').then((res) => setBalances(res.data)).catch(() => {})
+    api.get('/approvals/pending').then((res) => setApprovals(res.data.length)).catch(() => {})
   }, [])
-
-  useEffect(() => { fetchNotes() }, [fetchNotes])
-
-  const addNote = async (e) => {
-    e.preventDefault()
-    if (!content.trim()) return
-    try {
-      const res = await api.post('/notes', { content: content.trim() })
-      setNotes((prev) => [res.data, ...prev])
-      setContent('')
-    } catch { setError('Failed to add note') }
-  }
-
-  const deleteNote = async (id) => {
-    try {
-      await api.delete(`/notes/${id}`)
-      setNotes((prev) => prev.filter((n) => n.id !== id))
-    } catch { setError('Failed to delete note') }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">My Notes</h1>
-        {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>}
-        <form onSubmit={addNote} className="mb-8">
-          <div className="flex gap-2">
-            <input value={content} onChange={(e) => setContent(e.target.value)} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Write a note..." required />
-            <button type="submit" className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition">Add</button>
-          </div>
-        </form>
-        <div className="space-y-3">
-          {notes.length === 0 && <p className="text-center text-gray-400 py-8">No notes yet. Write your first note above!</p>}
-          {notes.map((note) => (
-            <div key={note.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start gap-4">
-              <p className="text-gray-700 whitespace-pre-wrap flex-1">{note.content}</p>
-              <button onClick={() => deleteNote(note.id)} className="text-red-400 hover:text-red-600 transition flex-shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              </button>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Selamat datang, {user?.name}</h1>
+        <p className="text-gray-500 mb-6">{new Date().toLocaleDateString('id', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Link to="/attendance" className="bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-500 font-medium">Absensi Hari Ini</p>
+              <span className="text-2xl">{today?.checked_in ? '✅' : '⏳'}</span>
             </div>
-          ))}
+            {today?.checked_in ? (
+              <p className="text-sm">{today?.checked_out ? `Selesai ${today.attendance?.check_out?.substring(0, 5)}` : 'Belum check-out'}</p>
+            ) : (
+              <p className="text-sm text-indigo-600 font-medium">Belum absen</p>
+            )}
+          </Link>
+
+          <Link to="/leave-requests" className="bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-500 font-medium">Sisa Cuti</p>
+              <span className="text-2xl">📋</span>
+            </div>
+            {balances.map((b) => (
+              <p key={b.id} className="text-sm">{b.leave_type?.nama}: <strong>{b.kuota - b.terpakai}/{b.kuota}</strong></p>
+            ))}
+            {balances.length === 0 && <p className="text-sm text-gray-400">Tidak ada data</p>}
+          </Link>
+
+          <Link to="/approvals" className="bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-500 font-medium">Persetujuan</p>
+              <span className="text-2xl">📌</span>
+            </div>
+            {approvals > 0 ? (
+              <p className="text-sm text-red-500 font-medium">{approvals} perlu disetujui</p>
+            ) : (
+              <p className="text-sm text-gray-400">Tidak ada</p>
+            )}
+          </Link>
         </div>
       </div>
     </div>

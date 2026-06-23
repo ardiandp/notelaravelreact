@@ -2,26 +2,62 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DivisionController;
+use App\Http\Controllers\PositionController;
+use App\Http\Controllers\MasterDataController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Auth
 Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Admin routes
-Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+    // Users
     Route::get('users', [AdminController::class, 'users'])->name('admin.users');
     Route::get('users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
     Route::post('users', [AdminController::class, 'storeUser'])->name('admin.users.store');
     Route::get('users/{user}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::delete('users/{user}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+
+    // Divisions
+    Route::get('divisions', [DivisionController::class, 'index'])->name('admin.divisions');
+    Route::get('divisions/create', [DivisionController::class, 'create'])->name('admin.divisions.create');
+    Route::post('divisions', [DivisionController::class, 'store'])->name('admin.divisions.store');
+    Route::get('divisions/{division}/edit', [DivisionController::class, 'edit'])->name('admin.divisions.edit');
+    Route::put('divisions/{division}', [DivisionController::class, 'update'])->name('admin.divisions.update');
+    Route::delete('divisions/{division}', [DivisionController::class, 'destroy'])->name('admin.divisions.delete');
+
+    // Positions
+    Route::get('positions', [PositionController::class, 'index'])->name('admin.positions');
+    Route::get('positions/create', [PositionController::class, 'create'])->name('admin.positions.create');
+    Route::post('positions', [PositionController::class, 'store'])->name('admin.positions.store');
+    Route::get('positions/{position}/edit', [PositionController::class, 'edit'])->name('admin.positions.edit');
+    Route::put('positions/{position}', [PositionController::class, 'update'])->name('admin.positions.update');
+    Route::delete('positions/{position}', [PositionController::class, 'destroy'])->name('admin.positions.delete');
+
+    // Shifts
+    Route::get('shifts', [MasterDataController::class, 'shifts'])->name('admin.shifts');
+    Route::post('shifts', [MasterDataController::class, 'storeShift'])->name('admin.shifts.store');
+    Route::put('shifts/{shift}', [MasterDataController::class, 'updateShift'])->name('admin.shifts.update');
+    Route::delete('shifts/{shift}', [MasterDataController::class, 'destroyShift'])->name('admin.shifts.delete');
+
+    // Locations
+    Route::get('locations', [MasterDataController::class, 'locations'])->name('admin.locations');
+    Route::post('locations', [MasterDataController::class, 'storeLocation'])->name('admin.locations.store');
+    Route::put('locations/{location}', [MasterDataController::class, 'updateLocation'])->name('admin.locations.update');
+    Route::delete('locations/{location}', [MasterDataController::class, 'destroyLocation'])->name('admin.locations.delete');
+
+    // Holidays
+    Route::get('holidays', [MasterDataController::class, 'holidays'])->name('admin.holidays');
+    Route::post('holidays', [MasterDataController::class, 'storeHoliday'])->name('admin.holidays.store');
+    Route::delete('holidays/{holiday}', [MasterDataController::class, 'destroyHoliday'])->name('admin.holidays.delete');
 });
 
 Route::get('/dashboard', function () {

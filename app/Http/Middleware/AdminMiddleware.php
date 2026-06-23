@@ -10,7 +10,7 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->is_admin) {
+        if (! $request->user()?->hasAnyRole(['Super Admin', 'HRD'])) {
             abort(403, 'Admin access only.');
         }
 

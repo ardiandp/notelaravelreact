@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Note;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class AdminController extends Controller
 {
@@ -40,15 +41,16 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
-            'is_admin' => 'boolean',
+            'role' => 'required|exists:roles,id',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'is_admin' => $validated['is_admin'] ?? false,
         ]);
+
+        $user->assignRole(Role::findById($validated['role']));
 
         return redirect()->route('admin.users')->with('success', 'User created.');
     }
@@ -64,18 +66,19 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|min:8',
-            'is_admin' => 'boolean',
+            'role' => 'required|exists:roles,id',
         ]);
 
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'is_admin' => $validated['is_admin'] ?? false,
         ]);
 
         if (!empty($validated['password'])) {
             $user->update(['password' => Hash::make($validated['password'])]);
         }
+
+        $user->syncRoles([Role::findById($validated['role'])]);
 
         return redirect()->route('admin.users')->with('success', 'User updated.');
     }

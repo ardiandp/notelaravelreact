@@ -56,7 +56,7 @@
                         <tr>
                             <td>{{ $u->name }}</td>
                             <td>{{ $u->email }}</td>
-                            <td><span class="badge {{ $u->is_admin ? 'badge-warning' : 'badge-info' }}">{{ $u->is_admin ? 'Admin' : 'User' }}</span></td>
+                            <td><span class="badge badge-info">{{ $u->roles->pluck('name')->join(', ') ?: 'No Role' }}</span></td>
                         </tr>
                         @endforeach
                     </table>
