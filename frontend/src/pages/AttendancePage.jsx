@@ -1,185 +1,177 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import CameraModal from '../components/CameraModal'
+import { ArrowLeft, Calendar, MapPinned, CheckCircle, XCircle, Clock, Camera, History } from 'lucide-react'
 
 export default function AttendancePage() {
-  const [state, setState] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const [today, setToday] = useState(null)
   const [history, setHistory] = useState([])
-  const [bulan, setBulan] = useState(new Date().getMonth() + 1)
-  const [tahun, setTahun] = useState(new Date().getFullYear())
-  const [correctionModal, setCorrectionModal] = useState(null)
-  const [alasan, setAlasan] = useState('')
-  const [cameraFor, setCameraFor] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
+  const [action, setAction] = useState(null)
+  const [time, setTime] = useState(new Date())
+  const [error, setError] = useState('')
 
-  const fetchToday = useCallback(async () => {
-    try {
-      const res = await api.get('/attendance/today')
-      setState(res.data)
-    } catch { setState({ checked_in: false, checked_out: false, has_schedule: false }) }
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    api.get('/attendance/today').then((r) => setToday(r.data)).catch(() => {})
+    api.get('/attendance/history').then((r) => setHistory(r.data || [])).catch(() => {})
+    return () => clearInterval(timer)
   }, [])
 
-  const fetchHistory = useCallback(async () => {
+  const timeStr = time.toLocaleTimeString('id', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const dateStr = time.toLocaleDateString('id', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+  const handleAction = useCallback((type) => {
+    if (!today?.has_schedule) { setError('Anda tidak memiliki jadwal hari ini'); return }
+    if (type === 'check-in' && today?.checked_in) { setError('Anda sudah check-in'); return }
+    if (type === 'check-out' && !today?.checked_in) { setError('Anda belum check-in'); return }
+    if (type === 'check-out' && today?.checked_out) { setError('Anda sudah check-out'); return }
+    setAction(type)
+    setShowCamera(true)
+  }, [today])
+
+  const handleCameraConfirm = useCallback(async (foto) => {
+    setShowCamera(false)
+    setLoading(true)
+    setError('')
+
     try {
-      const res = await api.get('/attendance/history', { params: { bulan, tahun } })
-      setHistory(res.data)
-    } catch {}
-  }, [bulan, tahun])
+      const pos = await new Promise((res, rej) => {
+        navigator.geolocation.getCurrentPosition(
+          (p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }),
+          () => res({ lat: 0, lng: 0 }),
+          { timeout: 5000 }
+        )
+      })
 
-  useEffect(() => { fetchToday().finally(() => setLoading(false)) }, [fetchToday])
-  useEffect(() => { fetchHistory() }, [fetchHistory])
-
-  const confirmAttendance = async (type, foto, pos) => {
-    try {
-      const payload = {
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-        address: 'Lokasi anda',
-        foto,
-      }
-      if (type === 'in') payload.work_from = state?.work_from || 'wfo'
-
-      if (type === 'in') {
-        await api.post('/attendance/check-in', payload)
-      } else {
-        await api.post('/attendance/check-out', payload)
-      }
-      setCameraFor(null)
-      fetchToday()
+      const endpoint = action === 'check-in' ? '/attendance/check-in' : '/attendance/check-out'
+      const res = await api.post(endpoint, { ...pos, foto })
+      setToday(res.data)
+      api.get('/attendance/history').then((r) => setHistory(r.data || [])).catch(() => {})
     } catch (err) {
-      alert(err.response?.data?.message || 'Error')
+      setError(err.response?.data?.message || 'Gagal memproses absensi')
+    } finally {
+      setLoading(false)
+      setAction(null)
     }
-  }
-
-  const handleAttendance = (type) => {
-    if (!navigator.geolocation) return alert('GPS tidak tersedia')
-    setCameraFor(type)
-  }
-
-  const handleCameraConfirm = (foto) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => confirmAttendance(cameraFor, foto, pos),
-      () => alert('Gagal mendapatkan lokasi GPS')
-    )
-  }
-
-  const handleCameraClose = () => {
-    setCameraFor(null)
-  }
-
-  const submitCorrection = async () => {
-    try {
-      await api.post('/attendance/correction', { attendance_id: correctionModal, alasan })
-      setCorrectionModal(null)
-      setAlasan('')
-      alert('Pengajuan konfirmasi berhasil')
-    } catch (err) { alert(err.response?.data?.message || 'Error') }
-  }
+  }, [action])
 
   const statusBadge = (s) => {
-    const m = { hadir: 'bg-green-100 text-green-700', terlambat: 'bg-yellow-100 text-yellow-700', alpha: 'bg-red-100 text-red-700', izin: 'bg-blue-100 text-blue-700', sakit: 'bg-purple-100 text-purple-700', cuti: 'bg-indigo-100 text-indigo-700' }
-    return <span className={`text-xs px-2 py-0.5 rounded-full ${m[s] || 'bg-gray-100 text-gray-700'}`}>{s}</span>
+    const map = { hadir: 'bg-green-100 text-green-700', terlambat: 'bg-yellow-100 text-yellow-700', alpha: 'bg-red-100 text-red-700', izin: 'bg-blue-100 text-blue-700', sakit: 'bg-purple-100 text-purple-700', cuti: 'bg-indigo-100 text-indigo-700' }
+    return map[s] || 'bg-gray-100 text-gray-700'
   }
 
-  const wfBadge = (wf) => {
-    const cls = wf === 'wfa' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'
-    return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>{(wf || 'wfo').toUpperCase()}</span>
-  }
-
-  const fotoThumb = (path) => {
-    if (!path) return null
-    return (
-      <img
-        src={`/storage/${path}`}
-        alt="foto"
-        className="w-16 h-16 object-cover rounded-lg mx-auto mt-2 border"
-      />
-    )
-  }
-
-  if (loading) return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" /></div>
+  const checkedIn = today?.checked_in
+  const checkedOut = today?.checked_out
 
   return (
-    <div>
-      <div className="bg-blue-50 border border-blue-200 rounded-xl shadow-sm p-6 mb-6 text-center">
-        {state?.checked_in ? (
-          <>
-            {state.attendance && (
-              <div className="mb-4">
-                <p className="text-sm text-gray-500">Absen Masuk: {state.attendance.check_in?.substring(0, 5)}</p>
-                <p className="text-sm text-gray-500">Status: {statusBadge(state.attendance.status)} {wfBadge(state.attendance.work_from || state.work_from)}</p>
-                {fotoThumb(state.attendance.check_in_foto)}
-                {state.attendance.terlambat_menit > 0 && (
-                  <div className="mt-2">
-                    <p className="text-sm text-red-500">Terlambat {state.attendance.terlambat_menit} menit</p>
-                    <button onClick={() => setCorrectionModal(state.attendance.id)} className="text-xs text-indigo-600 hover:underline">Ajukan konfirmasi keterlambatan</button>
-                  </div>
-                )}
-              </div>
-            )}
-            {state.checked_out ? (
-              <div className="opacity-60 cursor-not-allowed">
-                <button disabled className="bg-gray-400 text-white px-8 py-3 rounded-xl text-lg font-medium">Selesai</button>
-                <p className="text-green-600 font-medium mt-2">Absen Keluar {state.attendance?.check_out?.substring(0, 5)}</p>
-                {fotoThumb(state.attendance.check_out_foto)}
-              </div>
-            ) : (
-              <button onClick={() => handleAttendance('out')} className="bg-red-500 text-white px-8 py-3 rounded-xl text-lg font-medium hover:bg-red-600 transition">Absen Keluar</button>
-            )}
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-gray-500 mb-3">Jadwal hari ini: {state?.schedule?.nama || '-'} {wfBadge(state?.work_from)}</p>
-            {state?.has_schedule === false ? (
-              <button disabled className="bg-gray-400 text-white px-8 py-3 rounded-xl text-lg font-medium cursor-not-allowed">Tidak ada jadwal</button>
-            ) : (
-              <button onClick={() => handleAttendance('in')} className="bg-indigo-600 text-white px-8 py-3 rounded-xl text-lg font-medium hover:bg-indigo-700 transition">Absen Masuk</button>
-            )}
-          </>
-        )}
-      </div>
+    <>
+      <div className="-mx-4 -mt-4">
+        <div className="bg-gradient-to-b from-primary-600 to-secondary-500 px-4 pt-4 pb-24 rounded-b-[32px] shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white">
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-white font-semibold text-base">Absensi</h1>
+            <button className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white">
+              <Calendar size={18} />
+            </button>
+          </div>
 
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-semibold">Riwayat</h2>
-          <div className="flex gap-2">
-            <select value={bulan} onChange={(e) => setBulan(parseInt(e.target.value))} className="border rounded px-2 py-1 text-sm">
-              {Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id', { month: 'long' })}</option>)}
-            </select>
-            <select value={tahun} onChange={(e) => setTahun(parseInt(e.target.value))} className="border rounded px-2 py-1 text-sm">
-              {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+          <div className="text-center text-white">
+            <p className="text-sm text-white/70 mb-1">{dateStr}</p>
+            <p className="text-4xl font-bold tracking-tight mb-3">{timeStr}</p>
+            <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full ${checkedIn ? 'bg-green-500/20 text-green-100' : 'bg-white/20 text-white/80'}`}>
+              <span className={`w-2 h-2 rounded-full ${checkedIn ? 'bg-green-400 animate-pulse' : 'bg-white/50'}`} />
+              {checkedIn ? (checkedOut ? 'Selesai' : 'Sedang Bekerja') : 'Belum Absen'}
+            </span>
           </div>
         </div>
-        {history.length === 0 ? <p className="text-gray-400 text-center py-4">Belum ada data</p> : (
-          <div className="space-y-2">
-            {history.map((h) => (
-              <div key={h.id} className="flex items-center justify-between py-2 border-b last:border-0 text-sm">
-                <span>{new Date(h.tanggal).toLocaleDateString('id', { day: 'numeric', month: 'short' })}</span>
-                {statusBadge(h.status)} {wfBadge(h.work_from)}
-                <span className="text-gray-500">{h.check_in?.substring(0, 5) || '-'} - {h.check_out?.substring(0, 5) || '-'}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {correctionModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setCorrectionModal(null)}>
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold mb-4">Konfirmasi Keterlambatan</h3>
-            <textarea value={alasan} onChange={(e) => setAlasan(e.target.value)} className="w-full border rounded-lg p-3 text-sm mb-4" rows={3} placeholder="Alasan keterlambatan..." />
-            <div className="flex gap-2">
-              <button onClick={submitCorrection} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">Kirim</button>
-              <button onClick={() => setCorrectionModal(null)} className="border px-4 py-2 rounded-lg text-sm">Batal</button>
+        <div className="px-4 -mt-16 relative z-10 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-2xl">
+              {error}
+            </div>
+          )}
+
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPinned size={16} className="text-primary-600" />
+              <p className="text-sm font-semibold text-gray-800">Lokasi Kerja</p>
+            </div>
+            <p className="text-sm text-gray-600 font-medium">Kantor Pusat</p>
+            <p className="text-xs text-gray-400 mb-3">Jl. Contoh No. 123, Jakarta Selatan</p>
+            <div className="bg-gray-100 rounded-xl h-28 flex items-center justify-center text-gray-400 text-xs gap-2">
+              <MapPinned size={16} />
+              Peta Lokasi
+            </div>
+            <div className="flex items-center gap-2 mt-3 text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              Dalam area geofence
+            </div>
+          </div>
+
+          <div className="card p-5">
+            <p className="text-sm font-semibold text-gray-800 mb-3">Status Absensi</p>
+            <div className="flex gap-3">
+              <div className="flex-1 bg-gray-50 rounded-xl p-4 text-center">
+                <CheckCircle size={20} className={`mx-auto mb-1.5 ${checkedIn ? 'text-green-500' : 'text-gray-300'}`} />
+                <p className="text-[11px] text-gray-400 font-medium">Check In</p>
+                <p className="text-sm font-bold text-gray-700 mt-0.5">
+                  {checkedIn ? today.attendance?.check_in?.substring(0, 5) : '--:--'}
+                </p>
+              </div>
+              <div className="flex-1 bg-gray-50 rounded-xl p-4 text-center">
+                <XCircle size={20} className={`mx-auto mb-1.5 ${checkedOut ? 'text-red-500' : 'text-gray-300'}`} />
+                <p className="text-[11px] text-gray-400 font-medium">Check Out</p>
+                <p className="text-sm font-bold text-gray-700 mt-0.5">
+                  {checkedOut ? today.attendance?.check_out?.substring(0, 5) : '--:--'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {!checkedIn ? (
+            <button onClick={() => handleAction('check-in')} disabled={loading}
+              className="btn-gradient w-full h-14 text-base flex items-center justify-center gap-2 disabled:opacity-60">
+              <Camera size={20} /> {loading ? 'Memproses...' : 'Check In'}
+            </button>
+          ) : !checkedOut ? (
+            <button onClick={() => handleAction('check-out')} disabled={loading}
+              className="btn-gradient w-full h-14 text-base flex items-center justify-center gap-2 disabled:opacity-60">
+              <Clock size={20} /> {loading ? 'Memproses...' : 'Check Out'}
+            </button>
+          ) : null}
+
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <History size={16} className="text-gray-400" />
+                <p className="text-sm font-semibold text-gray-800">Riwayat</p>
+              </div>
+              <span className="text-[11px] text-gray-400">{history.length} data</span>
+            </div>
+            <div className="space-y-2">
+              {history.length === 0 && <p className="text-xs text-gray-400 text-center py-4">Belum ada riwayat absensi</p>}
+              {history.slice(0, 5).map((h) => (
+                <div key={h.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">{new Date(h.tanggal).toLocaleDateString('id', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                    <p className="text-[11px] text-gray-400">{h.check_in?.substring(0, 5) || '--:--'} - {h.check_out?.substring(0, 5) || '--:--'}</p>
+                  </div>
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusBadge(h.status)}`}>{h.status}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {cameraFor && (
-        <CameraModal onConfirm={handleCameraConfirm} onClose={handleCameraClose} />
-      )}
-    </div>
+      {showCamera && <CameraModal onConfirm={handleCameraConfirm} onClose={() => { setShowCamera(false); setAction(null) }} />}
+    </>
   )
 }

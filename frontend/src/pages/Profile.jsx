@@ -1,88 +1,118 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/axios'
+import { User, Lock, LogOut } from 'lucide-react'
 
 export default function Profile() {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const [name, setName] = useState(user?.name || '')
-  const [email, setEmail] = useState(user?.email || '')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('')
-  const [msg, setMsg] = useState('')
-  const [error, setError] = useState('')
   const [tab, setTab] = useState('profile')
 
-  const updateProfile = async (e) => {
+  const [name, setName] = useState(user?.name || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [msg, setMsg] = useState('')
+  const [msgType, setMsgType] = useState('')
+
+  const [oldPw, setOldPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [pwMsg, setPwMsg] = useState('')
+  const [pwMsgType, setPwMsgType] = useState('')
+
+  const handleUpdate = async (e) => {
     e.preventDefault()
+    setMsg('')
     try {
-      const res = await api.put('/profile', { name, email })
-      localStorage.setItem('user', JSON.stringify(res.data.user))
-      setMsg('Profile updated')
+      await api.put('/profile', { name, email })
+      setMsg('Profil berhasil diperbarui'); setMsgType('success')
+      localStorage.setItem('user', JSON.stringify({ ...user, name, email }))
     } catch (err) {
-      setError(err.response?.data?.message || 'Update failed')
+      setMsg(err.response?.data?.message || 'Gagal memperbarui profil'); setMsgType('error')
     }
   }
 
-  const changePassword = async (e) => {
+  const handlePassword = async (e) => {
     e.preventDefault()
-    if (newPassword !== newPasswordConfirmation) { setError('Passwords do not match'); return }
+    setPwMsg('')
+    if (!oldPw || !newPw) { setPwMsg('Lengkapi semua field'); setPwMsgType('error'); return }
     try {
-      await api.put('/profile/password', { current_password: currentPassword, password: newPassword, password_confirmation: newPasswordConfirmation })
-      setCurrentPassword(''); setNewPassword(''); setNewPasswordConfirmation('')
-      setMsg('Password changed')
+      await api.put('/profile/password', { current_password: oldPw, new_password: newPw })
+      setPwMsg('Password berhasil diubah'); setPwMsgType('success')
+      setOldPw(''); setNewPw('')
     } catch (err) {
-      setError(err.response?.data?.message || 'Password change failed')
+      setPwMsg(err.response?.data?.message || 'Gagal mengubah password'); setPwMsgType('error')
     }
   }
-
-  const handleLogout = () => { logout(); navigate('/login') }
 
   return (
     <div>
-      <div className="flex gap-2 mb-6">
-        <button onClick={() => setTab('profile')} className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'profile' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border'}`}>Profile</button>
-        <button onClick={() => setTab('password')} className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'password' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border'}`}>Password</button>
+      <div className="text-center mb-6">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-600 to-secondary-600 flex items-center justify-center text-white text-2xl font-bold mx-auto shadow-lg shadow-primary-600/20 mb-3">
+          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+        </div>
+        <h2 className="text-lg font-bold text-gray-800">{user?.name}</h2>
+        <p className="text-xs text-gray-400">{user?.email}</p>
       </div>
-      {msg && <div className="bg-green-50 text-green-600 text-sm p-3 rounded-lg mb-4">{msg}</div>}
-      {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>}
+
+      <div className="flex gap-2 mb-5 p-1 bg-gray-100 rounded-2xl">
+        <button onClick={() => setTab('profile')}
+          className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl text-sm font-medium transition ${tab === 'profile' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'}`}>
+          <User size={16} /> Profil
+        </button>
+        <button onClick={() => setTab('password')}
+          className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl text-sm font-medium transition ${tab === 'password' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'}`}>
+          <Lock size={16} /> Password
+        </button>
+      </div>
 
       {tab === 'profile' && (
-        <form onSubmit={updateProfile} className="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" required />
-          </div>
-          <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">Save Changes</button>
-        </form>
+        <div className="card p-5">
+          {msg && (
+            <div className={`text-sm px-4 py-3 rounded-xl mb-4 ${msgType === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+              {msg}
+            </div>
+          )}
+          <form onSubmit={handleUpdate} className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Nama Lengkap</label>
+              <input value={name} onChange={(e) => setName(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 outline-none transition" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Email</label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 outline-none transition" />
+            </div>
+            <button type="submit" className="btn-gradient w-full h-12 text-sm">Simpan Perubahan</button>
+          </form>
+        </div>
       )}
 
       {tab === 'password' && (
-        <form onSubmit={changePassword} className="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" required minLength={8} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-            <input type="password" value={newPasswordConfirmation} onChange={(e) => setNewPasswordConfirmation(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" required />
-          </div>
-          <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">Change Password</button>
-        </form>
+        <div className="card p-5">
+          {pwMsg && (
+            <div className={`text-sm px-4 py-3 rounded-xl mb-4 ${pwMsgType === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+              {pwMsg}
+            </div>
+          )}
+          <form onSubmit={handlePassword} className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Password Saat Ini</label>
+              <input type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 outline-none transition" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Password Baru</label>
+              <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-100 outline-none transition" />
+            </div>
+            <button type="submit" className="btn-gradient w-full h-12 text-sm">Ubah Password</button>
+          </form>
+        </div>
       )}
 
-      <div className="mt-6 text-center">
-        <button onClick={handleLogout} className="text-sm text-red-500 hover:underline">Sign Out</button>
+      <div className="mt-5 text-center">
+        <button onClick={logout} className="inline-flex items-center gap-2 text-sm text-red-500 font-medium hover:text-red-600 transition">
+          <LogOut size={16} /> Keluar
+        </button>
       </div>
     </div>
   )

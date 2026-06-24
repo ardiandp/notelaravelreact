@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Camera, Repeat, Check } from 'lucide-react'
 
 export default function CameraModal({ onConfirm, onClose }) {
   const videoRef = useRef(null)
@@ -14,9 +15,7 @@ export default function CameraModal({ onConfirm, onClose }) {
 
   const startCamera = async () => {
     try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      })
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } } })
       setStream(s)
       if (videoRef.current) videoRef.current.srcObject = s
     } catch {
@@ -25,7 +24,7 @@ export default function CameraModal({ onConfirm, onClose }) {
   }
 
   const stopCamera = () => {
-    if (stream) stream.getTracks().forEach(t => t.stop())
+    if (stream) stream.getTracks().forEach((t) => t.stop())
   }
 
   const capture = () => {
@@ -35,50 +34,48 @@ export default function CameraModal({ onConfirm, onClose }) {
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-    setCaptured(dataUrl)
+    setCaptured(canvas.toDataURL('image/jpeg', 0.8))
     stopCamera()
   }
 
   const retake = () => {
     setCaptured(null)
-    setError(null)
     startCamera()
-  }
-
-  const confirm = () => {
-    if (captured) onConfirm(captured)
   }
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-sm w-full mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-        {error ? (
-          <div className="p-8 text-center">
-            <p className="text-red-500 mb-4">{error}</p>
-            <button onClick={onClose} className="border px-6 py-2 rounded-lg text-sm">Tutup</button>
-          </div>
-        ) : captured ? (
-          <div className="p-4">
-            <img src={captured} alt="foto" className="w-full rounded-lg" />
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-        ) : (
-          <div className="p-4">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-lg" />
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-        )}
-        <div className="flex justify-center gap-4 p-4 border-t">
+      <div className="bg-white rounded-[24px] max-w-sm w-full mx-4 overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="p-4">
+          {error ? (
+            <div className="h-48 flex items-center justify-center text-red-500 text-sm bg-gray-50 rounded-2xl">{error}</div>
+          ) : captured ? (
+            <img src={captured} alt="captured" className="w-full rounded-2xl" />
+          ) : (
+            <div className="relative bg-black rounded-2xl overflow-hidden">
+              <video ref={videoRef} autoPlay playsInline className="w-full h-56 object-cover" />
+              <div className="absolute inset-0 border-2 border-white/30 rounded-2xl pointer-events-none" />
+            </div>
+          )}
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+
+        <div className="flex justify-center gap-4 p-4 border-t border-gray-100">
           {captured ? (
             <>
-              <button onClick={retake} className="border px-6 py-2 rounded-lg text-sm">Ulangi</button>
-              <button onClick={confirm} className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm">Gunakan</button>
+              <button onClick={retake} className="flex items-center gap-1.5 border-2 border-gray-200 h-11 px-6 rounded-2xl text-sm font-medium text-gray-600 hover:border-primary-300 transition">
+                <Repeat size={16} /> Ulangi
+              </button>
+              <button onClick={() => onConfirm(captured)} className="flex items-center gap-1.5 btn-gradient h-11 px-6 text-sm">
+                <Check size={16} /> Gunakan
+              </button>
             </>
           ) : (
             <>
-              <button onClick={onClose} className="border px-4 py-2 rounded-lg text-sm">Batal</button>
-              <button onClick={capture} className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm">Ambil Foto</button>
+              <button onClick={onClose} className="border-2 border-gray-200 h-11 px-6 rounded-2xl text-sm font-medium text-gray-600 hover:border-red-300 transition">Batal</button>
+              <button onClick={capture} className="flex items-center gap-1.5 btn-gradient h-11 px-6 text-sm">
+                <Camera size={16} /> Ambil Foto
+              </button>
             </>
           )}
         </div>

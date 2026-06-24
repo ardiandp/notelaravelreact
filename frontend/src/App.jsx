@@ -28,7 +28,7 @@ export default function App() {
           <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/attendance" element={<ProtectedLayout title="Absensi"><AttendancePage /></ProtectedLayout>} />
+          <Route path="/attendance" element={<ProtectedLayout noHeader><AttendancePage /></ProtectedLayout>} />
           <Route path="/leave-requests" element={<ProtectedLayout title="Pengajuan Cuti / Izin"><LeaveRequestsPage /></ProtectedLayout>} />
           <Route path="/approvals" element={<ProtectedLayout title="Persetujuan"><ApprovalsPage /></ProtectedLayout>} />
           <Route path="/schedule" element={<ProtectedLayout title="Kalender Kerja"><SchedulePage /></ProtectedLayout>} />

@@ -92,7 +92,7 @@ export default function SchedulePage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     )
   }
@@ -101,37 +101,35 @@ export default function SchedulePage() {
     return (
       <div className="text-center py-20">
         <p className="text-red-500 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="text-indigo-600 underline">Muat ulang</button>
+        <button onClick={() => window.location.reload()} className="text-primary-600 underline">Muat ulang</button>
       </div>
     )
   }
 
-  const todayDate = new Date()
-
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600">&larr;</button>
+        <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-xl text-gray-600">&larr;</button>
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-gray-800">{monthNames[bulan - 1]} {tahun}</h2>
           {(bulan !== now.getMonth() + 1 || tahun !== now.getFullYear()) && (
-            <button onClick={goToday} className="text-xs text-indigo-600 border border-indigo-300 rounded px-2 py-0.5 hover:bg-indigo-50">Hari ini</button>
+            <button onClick={goToday} className="text-xs text-primary-600 border border-primary-300 rounded-full px-3 py-1 hover:bg-primary-50">Hari ini</button>
           )}
         </div>
-        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600">&rarr;</button>
+        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-xl text-gray-600">&rarr;</button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="grid grid-cols-7 border-b bg-gray-50">
           {DAYS.map((d, i) => (
-            <div key={d} className={`text-center text-xs font-semibold py-2 text-gray-500 ${i >= 5 ? 'text-red-400' : ''}`}>{d}</div>
+            <div key={d} className={`text-center text-xs font-semibold py-2.5 text-gray-500 ${i >= 5 ? 'text-red-400' : ''}`}>{d}</div>
           ))}
         </div>
 
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 border-b last:border-b-0">
             {week.map((day, di) => {
-              if (day === null) return <div key={di} className="min-h-[72px] bg-gray-50/50"></div>
+              if (day === null) return <div key={di} className="min-h-[76px] bg-gray-50/50"></div>
 
               const dateStr = `${tahun}-${String(bulan).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const isToday = dateStr === today
@@ -142,9 +140,9 @@ export default function SchedulePage() {
               return (
                 <div
                   key={di}
-                  className={`min-h-[72px] p-1.5 border-r last:border-r-0 relative ${isToday ? 'ring-2 ring-indigo-500 ring-inset bg-indigo-50/30' : ''} ${isWeekend && !sched ? 'bg-gray-50' : ''}`}
+                  className={`min-h-[76px] p-1.5 border-r last:border-r-0 relative ${isToday ? 'ring-2 ring-primary-500 ring-inset bg-primary-50/30' : ''} ${isWeekend && !sched ? 'bg-gray-50' : ''}`}
                 >
-                  <span className={`text-xs font-medium ${isToday ? 'text-indigo-600' : isWeekend && !sched ? 'text-gray-400' : 'text-gray-600'}`}>{day}</span>
+                  <span className={`text-xs font-medium ${isToday ? 'text-primary-600' : isWeekend && !sched ? 'text-gray-400' : 'text-gray-600'}`}>{day}</span>
 
                   {holiday && !sched && (
                     <p className="text-[10px] text-red-500 leading-tight mt-0.5">{holiday.keterangan}</p>
